@@ -1,0 +1,79 @@
+{
+  "entities": {
+    "Note": {
+      "title": "Note",
+      "description": "A student's study note containing content and AI analysis.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "userId": { "type": "string" },
+        "weakPoints": { 
+          "type": "array", 
+          "items": { 
+            "type": "object",
+            "properties": {
+              "point": { "type": "string" },
+              "suggestion": { "type": "string" },
+              "severity": { "type": "string", "enum": ["low", "medium", "high"] }
+            }
+          }
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "content", "userId"]
+    },
+    "Flashcard": {
+      "title": "Flashcard",
+      "description": "A study card generated from a note.",
+      "type": "object",
+      "properties": {
+        "front": { "type": "string" },
+        "back": { "type": "string" },
+        "noteId": { "type": "string" },
+        "userId": { "type": "string" },
+        "mastery": { "type": "number" }
+      },
+      "required": ["front", "back", "noteId", "userId"]
+    },
+    "Quiz": {
+      "title": "Quiz",
+      "description": "An AI generated test for a note.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "noteId": { "type": "string" },
+        "questions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "question": { "type": "string" },
+              "options": { "type": "array", "items": { "type": "string" } },
+              "correctAnswer": { "type": "string" }
+            }
+          }
+        },
+        "score": { "type": "number" },
+        "completed": { "type": "boolean" }
+      },
+      "required": ["title", "noteId", "questions"]
+    }
+  },
+  "firestore": {
+    "notes": {
+      "schema": "Note",
+      "description": "Main collection of student notes."
+    },
+    "notes/{noteId}/flashcards": {
+      "schema": "Flashcard",
+      "description": "Subcollection of cards linked to a specific note."
+    },
+    "notes/{noteId}/quizzes": {
+      "schema": "Quiz",
+      "description": "Subcollection of tests linked to a specific note."
+    }
+  }
+}

@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 3. Primitives
+    function isSignedIn() { return request.auth != null; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // Logic helpers for entities
+    function isValidNote(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.content is string && data.content.size() <= 50000 &&
+             data.userId == request.auth.uid;
+    }
+
+    // --- Notes Collection ---
+    match /notes/{noteId} {
+      allow read: if isSignedIn() && existing().userId == request.auth.uid;
+      
+      allow create: if isSignedIn() && isValidNote(incoming()) && 
+                    incoming().createdAt == request.time;
+      
+      allow update: if isSignedIn() && existing().userId == request.auth.uid &&
+                    isValidNote(incoming()) &&
+                    incoming().userId == existing().userId &&
+                    incoming().createdAt == existing().createdAt &&
+                    incoming().updatedAt == request.time;
+      
+      allow delete: if isSignedIn() && existing().userId == request.auth.uid;
+
+      // --- Flashcards Subcollection ---
+      match /flashcards/{cardId} {
+        allow read: if isSignedIn() && get(/databases/$(database)/documents/notes/$(noteId)).data.userId == request.auth.uid;
+        
+        allow create: if isSignedIn() && 
+                      get(/databases/$(database)/documents/notes/$(noteId)).data.userId == request.auth.uid &&
+                      incoming().userId == request.auth.uid &&
+                      incoming().noteId == noteId;
+        
+        allow update: if isSignedIn() && 
+                      get(/databases/$(database)/documents/notes/$(noteId)).data.userId == request.auth.uid &&
+                      incoming().noteId == existing().noteId &&
+                      incoming().userId == existing().userId;
+        
+        allow delete: if isSignedIn() && 
+                      get(/databases/$(database)/documents/notes/$(noteId)).data.userId == request.auth.uid;
+      }
+
+      // --- Quizzes Subcollection ---
+      match /quizzes/{quizId} {
+        allow read: if isSignedIn() && get(/databases/$(database)/documents/notes/$(noteId)).data.userId == request.auth.uid;
+        
+        allow create: if isSignedIn() && 
+                      get(/databases/$(database)/documents/notes/$(noteId)).data.userId == request.auth.uid &&
+                      incoming().noteId == noteId;
+        
+        allow update: if isSignedIn() && 
+                      get(/databases/$(database)/documents/notes/$(noteId)).data.userId == request.auth.uid;
+        
+        allow delete: if isSignedIn() && 
+                      get(/databases/$(database)/documents/notes/$(noteId)).data.userId == request.auth.uid;
+      }
+    }
+
+    // --- User Profiles ---
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId);
+    }
+  }
+}

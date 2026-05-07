@@ -1,0 +1,11 @@
+{
+  "name": "notii",
+  "description": "An AI-powered studious note-taking app that generates flashcards, adaptive tests, and identifies weak points in your studies.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "AI-powered note analysis",
+    "Automated flashcard generation",
+    "Adaptive quiz creation",
+    "Educational coaching"
+  ]
+}
